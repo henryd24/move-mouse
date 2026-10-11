@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"time"
@@ -9,7 +10,17 @@ import (
 	"github.com/go-vgo/robotgo"
 )
 
+// version se inyecta en la compilacion con -ldflags "-X main.version=...".
+var version = "dev"
+
 func main() {
+	showVersion := flag.Bool("version", false, "muestra la version y sale")
+	flag.Parse()
+	if *showVersion {
+		fmt.Println("move-mouse", version)
+		return
+	}
+
 	rand.Seed(time.Now().UnixNano())
 
 	stop := make(chan struct{})
