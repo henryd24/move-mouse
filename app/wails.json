@@ -1,0 +1,11 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "MoveMouse",
+  "outputfilename": "move-mouse-gui",
+  "frontend:dir": "frontend",
+  "info": {
+    "productName": "Move Mouse",
+    "companyName": "henryd24",
+    "productVersion": "0.1.0"
+  }
+}

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copiar a ~/Library/LaunchAgents/ y ejecutar: launchctl load ~/Library/LaunchAgents/com.henryd24.move-mouse.plist
+     Requiere conceder permisos de Accesibilidad al binario. -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.henryd24.move-mouse</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/move-mouse</string>
+    <string>--stop-key</string><string>none</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/tmp/move-mouse.log</string>
+  <key>StandardErrorPath</key><string>/tmp/move-mouse.log</string>
+</dict>
+</plist>

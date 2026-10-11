@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: gomod
-    directory: /go-version
+    directory: /
     schedule:
       interval: weekly
     cooldown:
@@ -9,11 +9,16 @@ updates:
       semver-major-days: 30
     open-pull-requests-limit: 5
 
-  - package-ecosystem: uv
-    directory: /py-version
+  - package-ecosystem: gomod
+    directory: /app
     schedule:
       interval: weekly
     cooldown:
       default-days: 7
       semver-major-days: 30
     open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
