@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Move Mouse</title>
+<style>
+  :root { --bg:#fff; --fg:#1b1f24; --muted:#6a737d; --line:#d0d7de; --accent:#2563eb; --stop:#dc2626; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0d1117; --fg:#e6edf3; --muted:#8b949e; --line:#30363d; --accent:#3b82f6; --stop:#ef4444; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--fg); font:14px system-ui,sans-serif; }
+  h1 { font-size:18px; margin:0 0 12px; }
+  fieldset { border:1px solid var(--line); border-radius:8px; margin:0 0 12px; padding:10px 12px; }
+  legend { color:var(--muted); padding:0 4px; }
+  label { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:6px 0; }
+  input[type=text], select { width:140px; padding:4px 6px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:6px; }
+  button { width:100%; padding:10px; border:0; border-radius:8px; color:#fff; font-size:15px; cursor:pointer; background:var(--accent); }
+  button.stop { background:var(--stop); }
+  #status { margin:10px 0 6px; color:var(--muted); }
+  #log { height:90px; overflow:auto; font:12px ui-monospace,monospace; color:var(--muted); border:1px solid var(--line); border-radius:8px; padding:6px; white-space:pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Move Mouse</h1>
+
+<fieldset><legend>Movimiento</legend>
+  <label>Modo
+    <select id="Mode"><option value="random">Aleatorio</option><option value="jiggle">Jiggle (discreto)</option></select>
+  </label>
+  <label>Intervalo mínimo <input type="text" id="MinInterval" value="1s"></label>
+  <label>Intervalo máximo <input type="text" id="MaxInterval" value="5s"></label>
+  <label>Duración del movimiento <input type="text" id="MoveDuration" value="500ms"></label>
+  <label>Detener tras (0s = nunca) <input type="text" id="RunFor" value="0s"></label>
+</fieldset>
+
+<fieldset><legend>Opciones</legend>
+  <label>Click tras mover <input type="checkbox" id="Click"></label>
+  <label>Scroll mínimo <input type="checkbox" id="Scroll"></label>
+  <label>Detener si muevo el mouse <input type="checkbox" id="StopOnMouse"></label>
+  <label>Evitar suspensión <input type="checkbox" id="KeepAwake"></label>
+</fieldset>
+
+<fieldset><legend>Horario (opcional)</legend>
+  <label>Desde (HH:MM) <input type="text" id="Start" placeholder="09:00"></label>
+  <label>Hasta (HH:MM) <input type="text" id="End" placeholder="18:00"></label>
+</fieldset>
+
+<button id="toggle">Iniciar</button>
+<div id="status">Detenido</div>
+<div id="log"></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const App = () => window.go.main.App;
+  const durs = ["MinInterval","MaxInterval","MoveDuration","RunFor"];
+  const bools = ["Click","Scroll","StopOnMouse","KeepAwake"];
+  let running = false;
+
+  function fromForm() {
+    const c = { Mode: $("Mode").value, JigglePixels: 3, StopKey: "none",
+                Schedule: { Start: $("Start").value, End: $("End").value, Days: [] } };
+    durs.forEach(k => c[k] = $(k).value.trim());
+    bools.forEach(k => c[k] = $(k).checked);
+    return c;
+  }
+  function toForm(c) {
+    $("Mode").value = c.Mode;
+    durs.forEach(k => $(k).value = c[k]);
+    bools.forEach(k => $(k).checked = !!c[k]);
+    $("Start").value = c.Schedule?.Start || "";
+    $("End").value = c.Schedule?.End || "";
+  }
+  function setRunning(v, msg) {
+    running = v;
+    $("toggle").textContent = v ? "Detener" : "Iniciar";
+    $("toggle").classList.toggle("stop", v);
+    $("status").textContent = msg || (v ? "En ejecución" : "Detenido");
+  }
+  function log(m) {
+    const l = $("log"); l.textContent += m + "\n"; l.scrollTop = l.scrollHeight;
+  }
+
+  $("toggle").onclick = async () => {
+    if (running) { await App().Stop(); return; }
+    try {
+      const cfg = fromForm();
+      await App().Save(cfg);
+      await App().Start(cfg);
+      setRunning(true);
+    } catch (e) { setRunning(false, "Error: " + e); }
+  };
+
+  window.addEventListener("load", async () => {
+    toForm(await App().DefaultConfig());
+    window.runtime.EventsOn("log", log);
+    window.runtime.EventsOn("stopped", m => setRunning(false, m));
+  });
+</script>
+</body>
+</html>

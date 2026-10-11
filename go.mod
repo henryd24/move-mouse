@@ -1,10 +1,11 @@
-module move-mouse
+module github.com/henryd24/move-mouse
 
 go 1.24.0
 
 require (
 	github.com/eiannone/keyboard v0.0.0-20220611211555-0d226195f203
 	github.com/go-vgo/robotgo v1.0.1
+	github.com/pelletier/go-toml/v2 v2.4.3
 )
 
 require (

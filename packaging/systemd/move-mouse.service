@@ -1,0 +1,14 @@
+# Servicio de usuario: copiar a ~/.config/systemd/user/ y ejecutar
+#   systemctl --user daemon-reload && systemctl --user enable --now move-mouse
+# Requiere sesion grafica X11 (usa DISPLAY de la sesion).
+[Unit]
+Description=move-mouse
+After=graphical-session.target
+
+[Service]
+ExecStart=%h/.local/bin/move-mouse --stop-key none --log %h/.local/state/move-mouse.log
+Restart=on-failure
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=default.target

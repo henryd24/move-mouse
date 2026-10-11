@@ -1,0 +1,24 @@
+# Genera .deb y .rpm: nfpm package -p deb|rpm   (variables: VERSION, ARCH)
+name: move-mouse
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+section: utils
+maintainer: henryd24
+description: Mueve el mouse de forma configurable (aleatorio o jiggle) con horario y keep-awake.
+homepage: https://github.com/henryd24/move-mouse
+license: Apache-2.0
+contents:
+  - src: dist/move-mouse
+    dst: /usr/bin/move-mouse
+    file_info:
+      mode: 0755
+  - src: packaging/systemd/move-mouse.service
+    dst: /usr/share/doc/move-mouse/examples/move-mouse.service
+  - src: README.md
+    dst: /usr/share/doc/move-mouse/README.md
+overrides:
+  deb:
+    depends: [libx11-6, libxtst6, libpng16-16]
+  rpm:
+    depends: [libX11, libXtst, libpng]
