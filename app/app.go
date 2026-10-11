@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	goruntime "runtime"
 	"strings"
 	"sync"
 	"time"
@@ -132,6 +133,25 @@ func (a *App) stopWith(reason string) {
 	}
 }
 
+// OpenPermissions abre los ajustes de privacidad de macOS (Accesibilidad y Monitorizacion de entrada).
+func (a *App) OpenPermissions() {
+	if goruntime.GOOS != "darwin" {
+		return
+	}
+	runtime.BrowserOpenURL(a.ctx, "x-apple.systempreferences:com.apple.preference.security?Privacy_ListenEvent")
+}
+
+// OpenAccessibility abre el panel de Accesibilidad (necesario para mover el mouse en macOS).
+func (a *App) OpenAccessibility() {
+	if goruntime.GOOS != "darwin" {
+		return
+	}
+	runtime.BrowserOpenURL(a.ctx, "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")
+}
+
+// Platform devuelve el SO para ajustar la ayuda de la interfaz.
+func (a *App) Platform() string { return goruntime.GOOS }
+
 // Running indica si el motor esta activo.
 func (a *App) Running() bool {
 	a.mu.Lock()
@@ -152,6 +172,9 @@ func (a *App) toggle() {
 
 // onKey procesa un evento global de teclado.
 func (a *App) onKey(code uint16, down bool) {
+	if down {
+		runtime.EventsEmit(a.ctx, "key", keyName(code))
+	}
 	a.mu.Lock()
 	m := a.matcher
 	running := a.running

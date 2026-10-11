@@ -12,13 +12,13 @@ GOARCH   := $(shell go env GOARCH 2>/dev/null)
 PREFIX   ?= $(HOME)/.local
 
 # La GUI usa webkit2gtk 4.1 en Linux
-GUI_TAGS := production$(if $(filter linux,$(GOOS)),$(comma)webkit2_41)
 comma    := ,
+GUI_TAGS := production$(if $(filter linux,$(GOOS)),$(comma)webkit2_41)
 GUI_LDFLAGS := $(LDFLAGS)$(if $(filter windows,$(GOOS)), -H=windowsgui)
 
 .DEFAULT_GOAL := help
 .PHONY: help deps deps-linux deps-gui-linux build run test vet fmt lint package \
-        gui-build gui-package install uninstall deb rpm clean
+        gui-build gui-app gui-package install uninstall deb rpm clean
 
 help: ## Muestra esta ayuda
 	@awk 'BEGIN{FS=":.*## "} /^[a-zA-Z_-]+:.*## /{printf "  \033[36m%-14s\033[0m %s\n",$$1,$$2}' $(MAKEFILE_LIST)
@@ -75,8 +75,24 @@ endef
 package: build ## Empaqueta la CLI (.tar.gz / .zip + sha256)
 	$(call pack,$(APP),$(APP))
 
-gui-package: gui-build ## Empaqueta la GUI (.tar.gz / .zip + sha256)
+APP_VERSION := $(shell echo '$(VERSION)' | sed -E 's/^v//; s/-.*//' | grep -E '^[0-9]+(\.[0-9]+)*$$' || echo 0.0.0)
+
+gui-app: gui-build ## (macOS) Crea dist/MoveMouse.app, con identidad propia para los permisos
+	rm -rf $(DIST)/MoveMouse.app
+	mkdir -p $(DIST)/MoveMouse.app/Contents/MacOS
+	cp $(DIST)/$(APP)-gui $(DIST)/MoveMouse.app/Contents/MacOS/MoveMouse
+	sed 's/@VERSION@/$(APP_VERSION)/' packaging/macos/Info.plist > $(DIST)/MoveMouse.app/Contents/Info.plist
+	codesign --force --deep --sign - $(DIST)/MoveMouse.app
+
+gui-package: gui-build ## Empaqueta la GUI (.tar.gz / .zip + sha256; en macOS un .app dentro de .zip)
+ifeq ($(GOOS),darwin)
+	$(MAKE) gui-app VERSION=$(VERSION)
+	cd $(DIST) && NAME=$(APP)-gui-$(VERSION)-$(GOOS)-$(GOARCH).zip && \
+		ditto -c -k --keepParent MoveMouse.app $$NAME && shasum -a 256 $$NAME > $$NAME.sha256 && \
+		echo "Generado: $(DIST)/$$NAME"
+else
 	$(call pack,$(APP)-gui,$(APP)-gui)
+endif
 
 deb: build ## Genera .deb (requiere nfpm)
 	VERSION=$(patsubst v%,%,$(VERSION)) ARCH=$(GOARCH) nfpm package -p deb -f packaging/nfpm.yaml -t $(DIST)/

@@ -75,6 +75,12 @@
   <div class="hint">Sin días marcados = todos los días.</div>
 </fieldset>
 
+<div id="keyhelp" class="hint">Tecla global: esperando eventos de teclado… Si escribes y esto no cambia, faltan permisos.
+  <span id="perms" style="display:none">
+    <a href="#" id="permInput">Monitorización de entrada</a> ·
+    <a href="#" id="permAx">Accesibilidad</a>
+  </span>
+</div>
 <button id="toggle">Iniciar</button>
 <div id="status">Detenido</div>
 <div id="log"></div>
@@ -185,6 +191,14 @@
     toForm(await App().DefaultConfig());
     await persist();
     window.runtime.EventsOn("log", log);
+    window.runtime.EventsOn("key", k => {
+      $("keyhelp").firstChild.textContent = "Tecla global activa. Última tecla detectada: " + (k || "?") + " ";
+    });
+    if (await App().Platform() === "darwin") {
+      $("perms").style.display = "inline";
+      $("permInput").onclick = e => { e.preventDefault(); App().OpenPermissions(); };
+      $("permAx").onclick = e => { e.preventDefault(); App().OpenAccessibility(); };
+    }
     window.runtime.EventsOn("state", s => setRunning(s.running, s.msg));
   });
 </script>
