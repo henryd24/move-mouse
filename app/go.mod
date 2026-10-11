@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/henryd24/move-mouse v0.0.0
+	github.com/robotn/gohook v0.42.3
 	github.com/wailsapp/wails/v2 v2.10.2
 )
 

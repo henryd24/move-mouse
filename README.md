@@ -10,7 +10,9 @@ Mueve el mouse de forma configurable para mantener la sesión activa. Escrito en
 - Se detiene con cualquier tecla, con Ctrl+C/SIGTERM, tras un tiempo (`--duration`) o si tú mueves el mouse (`--stop-on-mouse`).
 - Horario (`--from/--to`, `--days`) y `--keep-awake` (evita suspensión: caffeinate / systemd-inhibit / SetThreadExecutionState).
 - Archivo de configuración TOML y log a archivo.
-- App gráfica en `app/` (iniciar/detener, ajustes, log).
+- App gráfica en `app/` con todas las opciones (modo, región, horario por días, click/scroll, keep-awake), log en vivo y guardado automático de la configuración.
+  - Detención por movimiento del mouse y/o **cualquier tecla** (global, aunque la ventana no tenga foco).
+  - **Tecla global** configurable (ej. `Ctrl+Shift+M`) para iniciar/detener desde cualquier aplicación.
 
 ## Uso rápido
 
@@ -69,4 +71,4 @@ git tag v0.1.0 && git push origin v0.1.0
 
 - Wayland: el control de mouse no funciona de forma fiable; usa una sesión X11.
 - macOS: concede permisos de Accesibilidad al binario. Los binarios no están firmados/notarizados.
-- Un hotkey global no está soportado: la librería de hooks falla al cargar sin servidor gráfico. Usa "cualquier tecla" en la terminal, `--stop-on-mouse` o señales.
+- La tecla global y la detención por "cualquier tecla" global solo existen en la app gráfica (usa un hook de teclado nativo que necesita sesión gráfica; en macOS pide permiso de Accesibilidad). La CLI no carga ese hook para poder correr sin pantalla: ahí usa "cualquier tecla" en la terminal, `--stop-on-mouse` o señales. El campo `hotkey` del TOML solo lo usa la GUI.

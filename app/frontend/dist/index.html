@@ -16,6 +16,13 @@
   legend { color:var(--muted); padding:0 4px; }
   label { display:flex; justify-content:space-between; align-items:center; gap:8px; margin:6px 0; }
   input[type=text], select { width:140px; padding:4px 6px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:6px; }
+  .grid4 { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .grid4 input, input[type=number] { width:100%; padding:4px 6px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:6px; }
+  label input[type=number] { width:140px; }
+  .days { display:flex; flex-wrap:wrap; gap:8px; margin-top:6px; }
+  .days label { margin:0; gap:4px; }
+  .hint { color:var(--muted); font-size:12px; margin-top:4px; }
+  #Hotkey { cursor:pointer; }
   button { width:100%; padding:10px; border:0; border-radius:8px; color:#fff; font-size:15px; cursor:pointer; background:var(--accent); }
   button.stop { background:var(--stop); }
   #status { margin:10px 0 6px; color:var(--muted); }
@@ -29,22 +36,43 @@
   <label>Modo
     <select id="Mode"><option value="random">Aleatorio</option><option value="jiggle">Jiggle (discreto)</option></select>
   </label>
+  <label>Radio del jiggle (px) <input type="number" id="JigglePixels" min="1" value="3"></label>
   <label>Intervalo mínimo <input type="text" id="MinInterval" value="1s"></label>
   <label>Intervalo máximo <input type="text" id="MaxInterval" value="5s"></label>
   <label>Duración del movimiento <input type="text" id="MoveDuration" value="500ms"></label>
   <label>Detener tras (0s = nunca) <input type="text" id="RunFor" value="0s"></label>
 </fieldset>
 
-<fieldset><legend>Opciones</legend>
+<fieldset><legend>Área de pantalla (modo aleatorio)</legend>
+  <label>Limitar a una región <input type="checkbox" id="UseRegion"></label>
+  <div id="regionBox" class="grid4">
+    <input type="number" id="RX" placeholder="x" min="0" value="0">
+    <input type="number" id="RY" placeholder="y" min="0" value="0">
+    <input type="number" id="RW" placeholder="ancho" min="1" value="800">
+    <input type="number" id="RH" placeholder="alto" min="1" value="600">
+  </div>
+</fieldset>
+
+<fieldset><legend>Acciones</legend>
   <label>Click tras mover <input type="checkbox" id="Click"></label>
   <label>Scroll mínimo <input type="checkbox" id="Scroll"></label>
-  <label>Detener si muevo el mouse <input type="checkbox" id="StopOnMouse"></label>
   <label>Evitar suspensión <input type="checkbox" id="KeepAwake"></label>
+</fieldset>
+
+<fieldset><legend>Detención</legend>
+  <label>Detener si muevo el mouse <input type="checkbox" id="StopOnMouse"></label>
+  <label>Detener si presiono cualquier tecla <input type="checkbox" id="StopAnyKey"></label>
+  <label>Tecla global iniciar/detener
+    <input type="text" id="Hotkey" readonly placeholder="clic y presiona la combinación">
+  </label>
+  <div class="hint">Backspace en el campo borra el atajo. Ejemplo: Ctrl+Shift+M.</div>
 </fieldset>
 
 <fieldset><legend>Horario (opcional)</legend>
   <label>Desde (HH:MM) <input type="text" id="Start" placeholder="09:00"></label>
   <label>Hasta (HH:MM) <input type="text" id="End" placeholder="18:00"></label>
+  <div class="days" id="days"></div>
+  <div class="hint">Sin días marcados = todos los días.</div>
 </fieldset>
 
 <button id="toggle">Iniciar</button>
@@ -56,21 +84,50 @@
   const App = () => window.go.main.App;
   const durs = ["MinInterval","MaxInterval","MoveDuration","RunFor"];
   const bools = ["Click","Scroll","StopOnMouse","KeepAwake"];
+  const DAYS = [["mon","Lun"],["tue","Mar"],["wed","Mié"],["thu","Jue"],["fri","Vie"],["sat","Sáb"],["sun","Dom"]];
   let running = false;
 
+  $("days").innerHTML = DAYS.map(([k, l]) =>
+    `<label><input type="checkbox" data-day="${k}"> ${l}</label>`).join("");
+
+  const num = id => parseInt($(id).value, 10) || 0;
+
   function fromForm() {
-    const c = { Mode: $("Mode").value, JigglePixels: 3, StopKey: "none",
-                Schedule: { Start: $("Start").value, End: $("End").value, Days: [] } };
+    const c = {
+      Mode: $("Mode").value,
+      JigglePixels: num("JigglePixels"),
+      StopKey: $("StopAnyKey").checked ? "any" : "none",
+      Hotkey: $("Hotkey").value,
+      Region: $("UseRegion").checked ? { X: num("RX"), Y: num("RY"), W: num("RW"), H: num("RH") } : null,
+      Schedule: {
+        Start: $("Start").value.trim(), End: $("End").value.trim(),
+        Days: [...document.querySelectorAll("[data-day]")].filter(e => e.checked).map(e => e.dataset.day),
+      },
+    };
     durs.forEach(k => c[k] = $(k).value.trim());
     bools.forEach(k => c[k] = $(k).checked);
     return c;
   }
   function toForm(c) {
     $("Mode").value = c.Mode;
+    $("JigglePixels").value = c.JigglePixels;
     durs.forEach(k => $(k).value = c[k]);
     bools.forEach(k => $(k).checked = !!c[k]);
+    $("StopAnyKey").checked = String(c.StopKey).toLowerCase() === "any";
+    $("Hotkey").value = c.Hotkey || "";
+    $("UseRegion").checked = !!c.Region;
+    if (c.Region) { $("RX").value = c.Region.X; $("RY").value = c.Region.Y; $("RW").value = c.Region.W; $("RH").value = c.Region.H; }
     $("Start").value = c.Schedule?.Start || "";
     $("End").value = c.Schedule?.End || "";
+    const days = (c.Schedule?.Days || []).map(d => d.toLowerCase());
+    document.querySelectorAll("[data-day]").forEach(e => e.checked = days.includes(e.dataset.day));
+    syncUi();
+  }
+  function syncUi() {
+    const jiggle = $("Mode").value === "jiggle";
+    $("JigglePixels").disabled = !jiggle;
+    $("UseRegion").disabled = jiggle;
+    document.querySelectorAll("#regionBox input").forEach(e => e.disabled = jiggle || !$("UseRegion").checked);
   }
   function setRunning(v, msg) {
     running = v;
@@ -82,20 +139,53 @@
     const l = $("log"); l.textContent += m + "\n"; l.scrollTop = l.scrollHeight;
   }
 
+  // Guarda y aplica (incluido el atajo global) en cada cambio.
+  async function persist() {
+    syncUi();
+    try { await App().Save(fromForm()); if (!running) $("status").textContent = "Detenido"; }
+    catch (e) { $("status").textContent = "Config inválida: " + e; }
+  }
+  document.querySelectorAll("input, select").forEach(e => e.addEventListener("change", persist));
+
+  // Captura de la combinación global.
+  const MODS = ["Control","Shift","Alt","Meta"];
+  function keyName(e) {
+    if (/^Key[A-Z]$/.test(e.code)) return e.code.slice(3).toLowerCase();
+    if (/^Digit\d$/.test(e.code)) return e.code.slice(5);
+    if (/^F\d{1,2}$/.test(e.code)) return e.code.toLowerCase();
+    return ({ Space:"space", Enter:"enter", Escape:"esc", Tab:"tab" })[e.code] || null;
+  }
+  $("Hotkey").addEventListener("keydown", e => {
+    e.preventDefault();
+    if (e.key === "Backspace" || e.key === "Delete") { $("Hotkey").value = ""; persist(); return; }
+    if (MODS.includes(e.key)) return;
+    const k = keyName(e);
+    if (!k) return;
+    const parts = [];
+    if (e.ctrlKey) parts.push("ctrl");
+    if (e.shiftKey) parts.push("shift");
+    if (e.altKey) parts.push("alt");
+    if (e.metaKey) parts.push("cmd");
+    if (!parts.length && !/^f\d+$/.test(k)) { $("status").textContent = "Usa al menos un modificador (o una tecla F)"; return; }
+    parts.push(k);
+    $("Hotkey").value = parts.join("+");
+    persist();
+  });
+
   $("toggle").onclick = async () => {
     if (running) { await App().Stop(); return; }
     try {
       const cfg = fromForm();
       await App().Save(cfg);
       await App().Start(cfg);
-      setRunning(true);
     } catch (e) { setRunning(false, "Error: " + e); }
   };
 
   window.addEventListener("load", async () => {
     toForm(await App().DefaultConfig());
+    await persist();
     window.runtime.EventsOn("log", log);
-    window.runtime.EventsOn("stopped", m => setRunning(false, m));
+    window.runtime.EventsOn("state", s => setRunning(s.running, s.msg));
   });
 </script>
 </body>

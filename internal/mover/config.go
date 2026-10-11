@@ -57,6 +57,7 @@ type Config struct {
 	StopOnMouse  bool     `toml:"stop_on_mouse"`
 	StopKey      string   `toml:"stop_key"` // "any" o "none"
 	KeepAwake    bool     `toml:"keep_awake"`
+	Hotkey       string   `toml:"hotkey"` // solo app grafica: tecla global para iniciar/detener, ej. "ctrl+shift+m"
 	Schedule     Schedule `toml:"schedule"`
 }
 
@@ -91,6 +92,9 @@ func (c Config) Validate() error {
 	}
 	if k := strings.ToLower(c.StopKey); k != "" && k != "any" && k != "none" {
 		return fmt.Errorf("stop_key invalido %q (usa any o none)", c.StopKey)
+	}
+	if strings.HasPrefix(c.Hotkey, "+") || strings.HasSuffix(c.Hotkey, "+") {
+		return fmt.Errorf("hotkey invalido %q", c.Hotkey)
 	}
 	return c.Schedule.Validate()
 }
